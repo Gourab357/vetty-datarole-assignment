@@ -90,3 +90,28 @@ SELECT
     ELSE NULL -- no refund requested
   END AS refund_processable
 FROM transactions;
+
+-- Q7: second purchase per buyer (ignoring refunds)
+WITH ranked_nonrefunded AS (
+  SELECT
+    *,
+    ROW_NUMBER() OVER (PARTITION BY buyer_id ORDER BY purchase_time ASC) AS rn
+  FROM transactions
+  WHERE refund_time IS NULL  -- ignore refunded purchases
+)
+SELECT *
+FROM ranked_nonrefunded
+WHERE rn = 2;
+
+-- Q8: second transaction time per buyer (using row_number)
+SELECT buyer_id, purchase_time AS second_purchase_time
+FROM (
+  SELECT
+    buyer_id,
+    purchase_time,
+    ROW_NUMBER() OVER (PARTITION BY buyer_id ORDER BY purchase_time ASC) AS rn
+  FROM transactions
+) t
+WHERE rn = 2
+ORDER BY buyer_id;
+
