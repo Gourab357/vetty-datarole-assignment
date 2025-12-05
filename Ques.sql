@@ -50,3 +50,43 @@ SELECT store_id, gross_transaction_value, purchase_time
 FROM ranked
 WHERE rn = 1
 ORDER BY store_id;
+
+-- Q5: most popular item_name on buyers' first purchase
+WITH first_purchase_per_buyer AS (
+  SELECT
+    t.buyer_id,
+    t.item_id
+  FROM (
+    SELECT
+      buyer_id,
+      item_id,
+      ROW_NUMBER() OVER (PARTITION BY buyer_id ORDER BY purchase_time ASC) AS rn
+    FROM transactions
+  ) t
+  WHERE t.rn = 1
+)
+SELECT i.item_name,
+       COUNT(*) AS first_purchase_count
+FROM first_purchase_per_buyer f
+JOIN items i ON i.item_id = f.item_id
+GROUP BY i.item_name
+ORDER BY first_purchase_count DESC
+LIMIT 1;
+
+-- Q6: mark whether refund can be processed (within 72 hours)
+SELECT
+  buyer_id,
+  purchase_time,
+  refund_time,
+  store_id,
+  item_id,
+  gross_transaction_value,
+  CASE
+    WHEN refund_time IS NOT NULL
+         AND refund_time <= purchase_time + INTERVAL '72 hours'
+      THEN TRUE
+    WHEN refund_time IS NOT NULL
+      THEN FALSE
+    ELSE NULL -- no refund requested
+  END AS refund_processable
+FROM transactions;
