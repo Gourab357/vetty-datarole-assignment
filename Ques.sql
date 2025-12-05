@@ -35,3 +35,18 @@ WHERE refund_time IS NOT NULL
 -- AND refund_time >= purchase_time
 GROUP BY store_id
 ORDER BY store_id;
+
+-- Q4: gross_transaction_value of each store's first order
+
+WITH ranked AS (
+  SELECT
+    store_id,
+    gross_transaction_value,
+    purchase_time,
+    ROW_NUMBER() OVER (PARTITION BY store_id ORDER BY purchase_time ASC) AS rn
+  FROM transactions
+)
+SELECT store_id, gross_transaction_value, purchase_time
+FROM ranked
+WHERE rn = 1
+ORDER BY store_id;
